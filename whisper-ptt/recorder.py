@@ -12,9 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class Recorder:
-    def __init__(self, sample_rate=16000, channels=1):
+    def __init__(self, sample_rate=16000, channels=1, device=None):
         self.sample_rate = sample_rate
         self.channels = channels
+        self.device = device
         self._frames = []
         self._stream = None
         self._lock = threading.Lock()
@@ -30,6 +31,7 @@ class Recorder:
             self._stream = sd.InputStream(
                 samplerate=self.sample_rate,
                 channels=self.channels,
+                device=self.device,
                 dtype="int16",
                 callback=self._audio_callback,
             )

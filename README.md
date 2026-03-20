@@ -6,6 +6,8 @@ A lightweight Windows push-to-talk voice-to-text tool. Hold a hotkey, speak, rel
 
 ```
 cd whisper-ptt
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 

@@ -9,6 +9,8 @@ DEFAULTS = {
     "device": "cpu",
     "sample_rate": 16000,
     "channels": 1,
+    "mic_device": None,
+    "inject_method": "clipboard",
     "beep_enabled": True,
     "ai_cleanup": {
         "enabled": False,
