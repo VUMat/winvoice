@@ -211,22 +211,40 @@ class App:
 
     # ── Main loop ──────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _resolve_key(name):
+        """Resolve a key name to something the keyboard library accepts.
+
+        The ``keyboard`` library does not recognise some punctuation keys by
+        their character (e.g. `` ` ``).  Map them to scan codes so
+        registration always succeeds.
+        """
+        _SCAN_CODES = {
+            "`": 41,
+            "~": 41,
+        }
+        return _SCAN_CODES.get(name, name)
+
     def run(self):
         import pystray
 
         hotkey = self.config["hotkey"]
         logger.info("Registering hotkey: %s", hotkey)
 
+        parts = hotkey.split("+")
+        trigger_key = self._resolve_key(parts[-1])
+        modifiers = parts[:-1]
+
         # Register hotkey press/release
         keyboard.on_press_key(
-            hotkey.split("+")[-1],
+            trigger_key,
             lambda e: self._on_hotkey_down()
-            if all(keyboard.is_pressed(k) for k in hotkey.split("+")[:-1])
+            if all(keyboard.is_pressed(k) for k in modifiers)
             else None,
             suppress=False,
         )
         keyboard.on_release_key(
-            hotkey.split("+")[-1],
+            trigger_key,
             lambda e: self._on_hotkey_up(),
             suppress=False,
         )
