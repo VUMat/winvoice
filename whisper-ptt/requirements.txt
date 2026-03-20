@@ -1,0 +1,12 @@
+faster-whisper
+keyboard
+sounddevice
+scipy
+pyperclip
+pyautogui
+pystray
+Pillow
+pywin32
+pyyaml
+requests
+psutil

@@ -1,0 +1,12 @@
+hotkey: "ctrl+`"
+whisper_model: "small.en"
+device: "cpu"
+sample_rate: 16000
+channels: 1
+beep_enabled: true
+ai_cleanup:
+  enabled: false
+  provider: "ollama"
+  model: "llama3.2:3b"
+  api_key: ""
+  endpoint: "http://localhost:11434/api/generate"
