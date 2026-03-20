@@ -4,7 +4,7 @@ import os
 import yaml
 
 DEFAULTS = {
-    "hotkey": "ctrl+shift+space",
+    "hotkey": "ctrl+`",
     "whisper_model": "small.en",
     "device": "cpu",
     "sample_rate": 16000,

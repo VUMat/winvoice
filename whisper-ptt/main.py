@@ -1,9 +1,11 @@
 """Whisper PTT — Push-to-talk voice-to-text with system tray icon."""
 
 import argparse
+import glob
 import logging
 import os
 import sys
+import tempfile
 import threading
 import time
 
@@ -36,8 +38,23 @@ STATE_COLORS = {
 }
 
 
+def _cleanup_stale_wavs():
+    """Remove any orphaned whisper-ptt temp WAV files from previous runs."""
+    tmp_dir = tempfile.gettempdir()
+    stale = glob.glob(os.path.join(tmp_dir, "tmp*.wav"))
+    for f in stale:
+        try:
+            # Only remove files older than 1 hour to avoid deleting active recordings
+            if time.time() - os.path.getmtime(f) > 3600:
+                os.unlink(f)
+                logger.info("Cleaned up stale temp file: %s", f)
+        except OSError:
+            pass
+
+
 class App:
     def __init__(self, config):
+        _cleanup_stale_wavs()
         self.config = config
         self.state = IDLE
         self.recorder = Recorder(
@@ -236,6 +253,48 @@ class App:
 # ── CLI ────────────────────────────────────────────────────────────────────────
 
 
+def _get_startup_shortcut_path():
+    """Return the path to the Windows Startup folder shortcut."""
+    startup_dir = os.path.join(
+        os.environ.get("APPDATA", ""),
+        "Microsoft", "Windows", "Start Menu", "Programs", "Startup",
+    )
+    return os.path.join(startup_dir, "Whisper PTT.lnk")
+
+
+def install_startup():
+    """Create a shortcut in the Windows Startup folder."""
+    try:
+        import winshell
+        from win32com.client import Dispatch
+    except ImportError:
+        # Fallback without winshell
+        from win32com.client import Dispatch
+
+    shortcut_path = _get_startup_shortcut_path()
+    shell = Dispatch("WScript.Shell")
+    shortcut = shell.CreateShortCut(shortcut_path)
+    shortcut.Targetpath = sys.executable
+    shortcut.Arguments = f'"{os.path.abspath(__file__)}"'
+    shortcut.WorkingDirectory = os.path.dirname(os.path.abspath(__file__))
+    shortcut.Description = "Whisper PTT — push-to-talk voice-to-text"
+    shortcut.save()
+    print(f"Startup shortcut created: {shortcut_path}")
+    print("Whisper PTT will now start with Windows.")
+    print("You can also manage it in Task Manager > Startup tab.")
+
+
+def remove_startup():
+    """Remove the shortcut from the Windows Startup folder."""
+    shortcut_path = _get_startup_shortcut_path()
+    if os.path.exists(shortcut_path):
+        os.unlink(shortcut_path)
+        print(f"Startup shortcut removed: {shortcut_path}")
+        print("Whisper PTT will no longer start with Windows.")
+    else:
+        print("No startup shortcut found — nothing to remove.")
+
+
 def test_mic(config):
     """Record 3 seconds, transcribe, and print the result."""
     import time as _time
@@ -261,6 +320,8 @@ def main():
     parser.add_argument("--config", action="store_true", help="Print current config and exit")
     parser.add_argument("--model", type=str, help="Override whisper model for this session")
     parser.add_argument("--test-mic", action="store_true", help="3-second test recording + transcription")
+    parser.add_argument("--install-startup", action="store_true", help="Add to Windows startup apps")
+    parser.add_argument("--remove-startup", action="store_true", help="Remove from Windows startup apps")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -271,6 +332,14 @@ def main():
     if args.config:
         import json
         print(json.dumps(cfg, indent=2))
+        return
+
+    if args.install_startup:
+        install_startup()
+        return
+
+    if args.remove_startup:
+        remove_startup()
         return
 
     if args.test_mic:
