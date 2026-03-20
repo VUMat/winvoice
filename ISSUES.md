@@ -4,35 +4,27 @@ Tracked issues for Whisper PTT. These should be filed as GitHub Issues when repo
 
 ---
 
-### 1. No progress indicator during first-run model download
+### 1. ~~No progress indicator during first-run model download~~ ✓ Fixed
 
 **Priority:** High
 
-The first whisper model load takes 30-60s+ (download + initialization). The tray icon sits grey with no feedback — the app looks frozen. Should show a toast like "Loading whisper model..." or add a `LOADING` state with a distinct tray icon color.
-
-**File:** `whisper-ptt/main.py` — `_ensure_model()`
+**Resolution:** Added `LOADING` state (blue tray icon) and toast notifications ("Loading whisper model..." / "Model loaded") during `_ensure_model()`.
 
 ---
 
-### 2. No microphone device selection
+### 2. ~~No microphone device selection~~ ✓ Fixed
 
 **Priority:** Medium
 
-Always uses the system default microphone. Users with multiple audio devices (headset, webcam mic, USB mic) have no way to select one without changing Windows defaults.
-
-Add a `mic_device` config option — `sounddevice` already supports device selection by name or index.
-
-**File:** `whisper-ptt/recorder.py`, `whisper-ptt/config.yaml`
+**Resolution:** Added `mic_device` config option (null = system default, or device name/index). Passed through `Recorder` to `sd.InputStream(device=...)`.
 
 ---
 
-### 3. Text injection visibly slow for long transcriptions
+### 3. ~~Text injection visibly slow for long transcriptions~~ ✓ Fixed
 
 **Priority:** High
 
-`pyautogui.typewrite(interval=0.01)` types at ~100 chars/sec. For longer transcriptions (50+ words), this is noticeably slow and distracting. Should default to clipboard-paste (`Ctrl+V`) for all text, not just Unicode, with an optional `inject_method: clipboard|typewrite` config option.
-
-**File:** `whisper-ptt/injector.py`
+**Resolution:** Default injection method changed to `clipboard` (Ctrl+V). Added `inject_method` config option (`clipboard` or `typewrite`).
 
 ---
 

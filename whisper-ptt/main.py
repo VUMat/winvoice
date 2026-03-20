@@ -26,12 +26,14 @@ logger = logging.getLogger("whisper-ptt")
 
 # ── State ──────────────────────────────────────────────────────────────────────
 IDLE = "idle"
+LOADING = "loading"
 RECORDING = "recording"
 TRANSCRIBING = "transcribing"
 DONE = "done"
 
 STATE_COLORS = {
     IDLE: "grey",
+    LOADING: "blue",
     RECORDING: "red",
     TRANSCRIBING: "orange",
     DONE: "green",
@@ -60,6 +62,7 @@ class App:
         self.recorder = Recorder(
             sample_rate=config["sample_rate"],
             channels=config["channels"],
+            device=config.get("mic_device"),
         )
         self.transcriber = None  # lazy-loaded
         self._lock_mode = False  # double-tap lock-on mode
@@ -112,10 +115,13 @@ class App:
 
     def _ensure_model(self):
         if self.transcriber is None:
+            self._update_tray(LOADING)
+            self._show_toast("Loading whisper model...")
             self.transcriber = Transcriber(
                 model_size=self.config["whisper_model"],
                 device=self.config["device"],
             )
+            self._show_toast("Model loaded")
 
     # ── Recording flow ─────────────────────────────────────────────────────
 
@@ -141,7 +147,7 @@ class App:
                 text = self.transcriber.transcribe(wav_path)
                 text = cleanup(text, self.config)
                 if text:
-                    inject_text(text)
+                    inject_text(text, method=self.config.get("inject_method", "clipboard"))
                 self._update_tray(DONE)
                 time.sleep(0.8)
             except Exception:

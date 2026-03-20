@@ -40,8 +40,13 @@ def _is_terminal(process_name):
     return process_name in TERMINAL_PROCESSES
 
 
-def inject_text(text):
-    """Inject text into the currently focused window."""
+def inject_text(text, method="clipboard"):
+    """Inject text into the currently focused window.
+
+    Args:
+        text: The text to inject.
+        method: "clipboard" (default, fast Ctrl+V) or "typewrite" (per-key).
+    """
     if not text:
         return
 
@@ -54,12 +59,8 @@ def inject_text(text):
     process_name = _get_focused_process_name()
     logger.info("Focused process: %s", process_name or "(unknown)")
 
-    if _is_terminal(process_name):
-        _paste_via_clipboard(text)
-    else:
+    if method == "typewrite" and not _is_terminal(process_name):
         try:
-            # For non-terminal apps, try typewrite first for better compatibility
-            # typewrite only works with ASCII; fall back to clipboard for unicode
             if text.isascii():
                 pyautogui.typewrite(text, interval=0.01)
             else:
@@ -67,6 +68,8 @@ def inject_text(text):
         except Exception:
             logger.warning("typewrite failed, falling back to clipboard paste")
             _paste_via_clipboard(text)
+    else:
+        _paste_via_clipboard(text)
 
     # Restore clipboard after a short delay
     def _restore():
