@@ -75,7 +75,7 @@ class App:
 
     def _make_icon_image(self, color="grey"):
         """Generate a simple mic-shaped icon."""
-        img = Image.new("RGBA", 64, 64)
+        img = Image.new("RGBA", (64, 64))
         draw = ImageDraw.Draw(img)
         # Background
         draw.rectangle([0, 0, 63, 63], fill=(40, 40, 40, 255))
