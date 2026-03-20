@@ -68,6 +68,7 @@ class App:
         self._lock_mode = False  # double-tap lock-on mode
         self._last_hotkey_time = 0.0
         self._double_tap_threshold = 0.35  # seconds
+        self._hotkey_held = False  # track physical key state to ignore repeats
         self._tray_icon = None
         self._stop_event = threading.Event()
 
@@ -75,7 +76,7 @@ class App:
 
     def _make_icon_image(self, color="grey"):
         """Generate a simple mic-shaped icon."""
-        img = Image.new("RGBA", 64, 64)
+        img = Image.new("RGBA", (64, 64))
         draw = ImageDraw.Draw(img)
         # Background
         draw.rectangle([0, 0, 63, 63], fill=(40, 40, 40, 255))
@@ -170,6 +171,11 @@ class App:
     # ── Hotkey handlers ────────────────────────────────────────────────────
 
     def _on_hotkey_down(self):
+        # Ignore key-repeat events while already held
+        if self._hotkey_held:
+            return
+        self._hotkey_held = True
+
         now = time.time()
         # Double-tap detection
         if now - self._last_hotkey_time < self._double_tap_threshold:
@@ -198,6 +204,7 @@ class App:
             self._start_recording()
 
     def _on_hotkey_up(self):
+        self._hotkey_held = False
         # In lock mode, releasing the key does nothing
         if self._lock_mode:
             return
@@ -211,26 +218,48 @@ class App:
 
     # ── Main loop ──────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _resolve_key(name):
+        """Resolve a key name to something the keyboard library accepts.
+
+        The ``keyboard`` library does not recognise some punctuation keys by
+        their character (e.g. `` ` ``).  Map them to scan codes so
+        registration always succeeds.
+        """
+        _SCAN_CODES = {
+            "`": 41,
+            "~": 41,
+        }
+        return _SCAN_CODES.get(name, name)
+
+    def _global_key_handler(self, event):
+        """Global keyboard hook — suppress hotkey combo from reaching apps."""
+        if event.scan_code == self._trigger_scan_code:
+            if event.event_type == keyboard.KEY_DOWN:
+                if all(keyboard.is_pressed(k) for k in self._modifiers):
+                    self._on_hotkey_down()
+                    return False  # suppress backtick from reaching the app
+            elif event.event_type == keyboard.KEY_UP:
+                if self._hotkey_held:
+                    self._on_hotkey_up()
+                    return False  # suppress
+        # Escape to cancel
+        if event.scan_code == 1 and event.event_type == keyboard.KEY_DOWN:
+            self._on_escape()
+        return True  # allow all other keys through
+
     def run(self):
         import pystray
 
         hotkey = self.config["hotkey"]
         logger.info("Registering hotkey: %s", hotkey)
 
-        # Register hotkey press/release
-        keyboard.on_press_key(
-            hotkey.split("+")[-1],
-            lambda e: self._on_hotkey_down()
-            if all(keyboard.is_pressed(k) for k in hotkey.split("+")[:-1])
-            else None,
-            suppress=False,
-        )
-        keyboard.on_release_key(
-            hotkey.split("+")[-1],
-            lambda e: self._on_hotkey_up(),
-            suppress=False,
-        )
-        keyboard.on_press_key("esc", lambda e: self._on_escape(), suppress=False)
+        parts = hotkey.split("+")
+        self._trigger_scan_code = self._resolve_key(parts[-1])
+        self._modifiers = parts[:-1]
+
+        # Global hook with suppression — only our hotkey combo is suppressed
+        keyboard.hook(self._global_key_handler, suppress=True)
 
         # Tray icon
         menu = pystray.Menu(
