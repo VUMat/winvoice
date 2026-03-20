@@ -232,6 +232,22 @@ class App:
         }
         return _SCAN_CODES.get(name, name)
 
+    def _global_key_handler(self, event):
+        """Global keyboard hook — suppress hotkey combo from reaching apps."""
+        if event.scan_code == self._trigger_scan_code:
+            if event.event_type == keyboard.KEY_DOWN:
+                if all(keyboard.is_pressed(k) for k in self._modifiers):
+                    self._on_hotkey_down()
+                    return False  # suppress backtick from reaching the app
+            elif event.event_type == keyboard.KEY_UP:
+                if self._hotkey_held:
+                    self._on_hotkey_up()
+                    return False  # suppress
+        # Escape to cancel
+        if event.scan_code == 1 and event.event_type == keyboard.KEY_DOWN:
+            self._on_escape()
+        return True  # allow all other keys through
+
     def run(self):
         import pystray
 
@@ -239,23 +255,11 @@ class App:
         logger.info("Registering hotkey: %s", hotkey)
 
         parts = hotkey.split("+")
-        trigger_key = self._resolve_key(parts[-1])
-        modifiers = parts[:-1]
+        self._trigger_scan_code = self._resolve_key(parts[-1])
+        self._modifiers = parts[:-1]
 
-        # Register hotkey press/release
-        keyboard.on_press_key(
-            trigger_key,
-            lambda e: self._on_hotkey_down()
-            if all(keyboard.is_pressed(k) for k in modifiers)
-            else None,
-            suppress=False,
-        )
-        keyboard.on_release_key(
-            trigger_key,
-            lambda e: self._on_hotkey_up(),
-            suppress=False,
-        )
-        keyboard.on_press_key("esc", lambda e: self._on_escape(), suppress=False)
+        # Global hook with suppression — only our hotkey combo is suppressed
+        keyboard.hook(self._global_key_handler, suppress=True)
 
         # Tray icon
         menu = pystray.Menu(
