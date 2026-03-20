@@ -68,6 +68,7 @@ class App:
         self._lock_mode = False  # double-tap lock-on mode
         self._last_hotkey_time = 0.0
         self._double_tap_threshold = 0.35  # seconds
+        self._hotkey_held = False  # track physical key state to ignore repeats
         self._tray_icon = None
         self._stop_event = threading.Event()
 
@@ -170,6 +171,11 @@ class App:
     # ── Hotkey handlers ────────────────────────────────────────────────────
 
     def _on_hotkey_down(self):
+        # Ignore key-repeat events while already held
+        if self._hotkey_held:
+            return
+        self._hotkey_held = True
+
         now = time.time()
         # Double-tap detection
         if now - self._last_hotkey_time < self._double_tap_threshold:
@@ -198,6 +204,7 @@ class App:
             self._start_recording()
 
     def _on_hotkey_up(self):
+        self._hotkey_held = False
         # In lock mode, releasing the key does nothing
         if self._lock_mode:
             return
