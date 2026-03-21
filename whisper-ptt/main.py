@@ -316,8 +316,13 @@ def install_startup():
     shortcut_path = _get_startup_shortcut_path()
     shell = Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(shortcut_path)
-    shortcut.Targetpath = sys.executable
-    shortcut.Arguments = f'"{os.path.abspath(__file__)}"'
+    # Use pythonw.exe (no console window) instead of python.exe
+    pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    if not os.path.exists(pythonw):
+        pythonw = sys.executable  # fallback
+    shortcut.Targetpath = pythonw
+    launcher = os.path.join(os.path.dirname(os.path.abspath(__file__)), "run.pyw")
+    shortcut.Arguments = f'"{launcher}"'
     shortcut.WorkingDirectory = os.path.dirname(os.path.abspath(__file__))
     shortcut.Description = "Whisper PTT — push-to-talk voice-to-text"
     shortcut.save()
