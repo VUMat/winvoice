@@ -14,6 +14,13 @@ if _dir not in sys.path:
     sys.path.insert(0, _dir)
 
 try:
+    # pythonw sets stderr/stdout to None, which crashes logging's StreamHandler.
+    # Redirect them to devnull so logging and print() don't blow up.
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+
     from main import main
     main()
 except Exception:
