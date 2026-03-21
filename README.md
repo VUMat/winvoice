@@ -14,13 +14,16 @@ pip install -r requirements.txt
 ## Usage
 
 ```
-python main.py                  # Start the tray app
+python main.py                  # Start with console window (useful for debugging)
+pythonw run.pyw                 # Start without console window (tray-only, recommended)
 python main.py --test-mic       # 3-second mic test + transcription
 python main.py --config         # Print current configuration
 python main.py --model base.en  # Override model for this session
 python main.py --install-startup  # Add to Windows startup apps
 python main.py --remove-startup   # Remove from Windows startup
 ```
+
+You can also double-click `run.pyw` in Explorer to launch the tray-only mode.
 
 ## How It Works
 
@@ -40,6 +43,7 @@ device: "cpu"                # cpu or cuda
 sample_rate: 16000
 channels: 1
 beep_enabled: true
+beep_volume: 0.1             # 0.0 (silent) to 1.0 (full volume)
 ai_cleanup:
   enabled: false
   provider: "ollama"         # ollama / openai / anthropic

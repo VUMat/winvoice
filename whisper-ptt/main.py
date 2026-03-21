@@ -107,8 +107,15 @@ class App:
         if not self.config.get("beep_enabled", True):
             return
         try:
-            import winsound
-            winsound.Beep(freq, duration)
+            import numpy as np
+            import sounddevice as sd
+
+            volume = self.config.get("beep_volume", 0.3)
+            sr = 44100
+            t = np.linspace(0, duration / 1000, int(sr * duration / 1000), endpoint=False)
+            tone = (volume * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+            sd.play(tone, samplerate=sr, blocksize=len(tone))
+            sd.wait()
         except Exception:
             pass
 
@@ -309,8 +316,13 @@ def install_startup():
     shortcut_path = _get_startup_shortcut_path()
     shell = Dispatch("WScript.Shell")
     shortcut = shell.CreateShortCut(shortcut_path)
-    shortcut.Targetpath = sys.executable
-    shortcut.Arguments = f'"{os.path.abspath(__file__)}"'
+    # Use pythonw.exe (no console window) instead of python.exe
+    pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    if not os.path.exists(pythonw):
+        pythonw = sys.executable  # fallback
+    shortcut.Targetpath = pythonw
+    launcher = os.path.join(os.path.dirname(os.path.abspath(__file__)), "run.pyw")
+    shortcut.Arguments = f'"{launcher}"'
     shortcut.WorkingDirectory = os.path.dirname(os.path.abspath(__file__))
     shortcut.Description = "Whisper PTT — push-to-talk voice-to-text"
     shortcut.save()
