@@ -12,7 +12,7 @@ DEFAULTS = {
     "mic_device": None,
     "inject_method": "clipboard",
     "beep_enabled": True,
-    "beep_volume": 0.3,
+    "beep_volume": 0.1,
     "ai_cleanup": {
         "enabled": False,
         "provider": "ollama",

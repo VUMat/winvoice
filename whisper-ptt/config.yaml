@@ -6,7 +6,7 @@ channels: 1
 mic_device: null        # null = system default; name or index to select a specific mic
 inject_method: clipboard  # "clipboard" (fast Ctrl+V) or "typewrite" (per-key typing)
 beep_enabled: true
-beep_volume: 0.3           # 0.0 (silent) to 1.0 (full volume)
+beep_volume: 0.1           # 0.0 (silent) to 1.0 (full volume)
 ai_cleanup:
   enabled: false
   provider: "ollama"
