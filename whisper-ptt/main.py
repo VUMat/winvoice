@@ -107,8 +107,15 @@ class App:
         if not self.config.get("beep_enabled", True):
             return
         try:
-            import winsound
-            winsound.Beep(freq, duration)
+            import numpy as np
+            import sounddevice as sd
+
+            volume = self.config.get("beep_volume", 0.3)
+            sr = 44100
+            t = np.linspace(0, duration / 1000, int(sr * duration / 1000), endpoint=False)
+            tone = (volume * np.sin(2 * np.pi * freq * t)).astype(np.float32)
+            sd.play(tone, samplerate=sr, blocksize=len(tone))
+            sd.wait()
         except Exception:
             pass
 
