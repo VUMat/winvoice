@@ -4,11 +4,28 @@ Use pythonw.exe (or double-click this .pyw file) to start Whisper PTT
 as a tray-only app with no terminal.
 """
 
-import runpy
 import os
 import sys
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-sys.argv = sys.argv[:1]  # strip launcher name, keep only flags if any
+# Ensure the whisper-ptt directory is on the import path and is the cwd
+_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(_dir)
+if _dir not in sys.path:
+    sys.path.insert(0, _dir)
 
-runpy.run_module("main", run_name="__main__", alter_sys=True)
+try:
+    # pythonw sets stderr/stdout to None, which crashes logging's StreamHandler.
+    # Redirect them to devnull so logging and print() don't blow up.
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+
+    from main import main
+    main()
+except Exception:
+    # pythonw swallows stderr — log crashes to a file so they're not invisible
+    import traceback
+    log_path = os.path.join(_dir, "crash.log")
+    with open(log_path, "w", encoding="utf-8") as f:
+        traceback.print_exc(file=f)
