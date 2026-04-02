@@ -1,5 +1,7 @@
 # Whisper PTT
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/VUMat/winvoice)
+
 A lightweight Windows push-to-talk voice-to-text tool. Hold a hotkey, speak, release — your words are transcribed locally via faster-whisper and pasted into the focused window. 100% offline.
 
 ## Install
